@@ -1,4 +1,4 @@
-﻿namespace SweetBox {
+﻿namespace SweetBox.CandyClasses {
    public class Lollipop : Candy {
       private bool _isLollipopOnStick;
       private string _flavor;

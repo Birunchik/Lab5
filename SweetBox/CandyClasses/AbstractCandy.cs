@@ -1,4 +1,4 @@
-﻿namespace SweetBox {
+﻿namespace SweetBox.CandyClasses {
    public enum CandySize {
       Small,
       Medium,
@@ -25,8 +25,6 @@
          get => _size;
          set {
             _size = value;
-            // Принудительно проверяем текущий вес при смене размера, 
-            // чтобы он не выходил за допустимые рамки нового размера
             Weight = _weight;
          }
       }

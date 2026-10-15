@@ -1,4 +1,4 @@
-﻿namespace SweetBox {
+﻿namespace SweetBox.CandyClasses {
    public enum ChocolateType {
       Dark,
       Milk,
