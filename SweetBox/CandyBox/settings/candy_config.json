@@ -1,0 +1,35 @@
+﻿{
+  "WeightRanges": {
+    "Small": {
+      "Min": 5.0,
+      "Max": 15.0
+    },
+    "Medium": {
+      "Min": 15.1,
+      "Max": 50.0
+    },
+    "Large": {
+      "Min": 50.1,
+      "Max": 150.0
+    }
+  },
+  "JellyConfig": {
+    "MinSugar": 10.0,
+    "MaxSugar": 75.0
+  },
+  "ChocolateConfig": {
+    "MinSugar": 20.0,
+    "MaxSugar": 90.0,
+    "AvailableTypes": [ "Dark", "Milk", "White" ]
+  },
+  "LollipopConfig": {
+    "MinSugar": 80.0,
+    "MaxSugar": 99.9,
+    "Flavors": [
+      "Клубника",
+      "Апельсин",
+      "Кола",
+      "Мята"
+    ]
+  }
+}

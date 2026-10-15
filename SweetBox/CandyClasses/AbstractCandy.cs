@@ -41,7 +41,10 @@
          get => _sugarContent;
          set {
             if (value < 0) {
-               throw new System.ArgumentOutOfRangeException(nameof(value), "Содержание сахара не может быть отрицательным.");
+               throw new ArgumentOutOfRangeException(nameof(value), "Содержание сахара не может быть отрицательным.");
+            }
+            else if(value > 100) {
+               throw new ArgumentOutOfRangeException(nameof(value), "Содержание сахара не может быть больше 100 процентов.");
             }
             _sugarContent = value;
          }
