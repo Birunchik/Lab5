@@ -26,7 +26,7 @@
 
       public override string GetInfo() {
          string stickInfo = IsLollipopOnStick ? "на палочке" : "без палочки";
-         return $"Леденец: '{Name}', Вкус: {Flavor}, Исполнение: {stickInfo}, Размер: {Size}, Вес: {Weight}г, Сахар: {SugarContent}%";
+         return $"Название: '{Name}', Размер: {Size}, Вес: {Weight:F2}г, Сахар: {SugarContent:F2}%, Вкус: {Flavor}, Исполнение: {stickInfo}";
       }
 
       public override string ToString() {

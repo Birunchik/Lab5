@@ -13,8 +13,8 @@
       }
 
       public override string GetInfo() {
-         string halalInfo = IsHalal ? "халяль" : "не халяль";
-         return $"Мармеладная конфета: '{Name}', Статус: {halalInfo}, Размер: {Size}, Вес: {Weight}г, Сахар: {SugarContent}%";
+         string halalInfo = IsHalal ? "Халяль" : "Не халяль";
+         return $"Название: '{Name}', Размер: {Size}, Вес: {Weight:F2}г, Сахар: {SugarContent:F2}%, Статус: {halalInfo}";
       }
 
       public override string ToString() {

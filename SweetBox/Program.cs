@@ -1,14 +1,14 @@
-﻿using SweetBox.CandyBox;
+﻿using SweetBox;
+using SweetBox.CandyBox;
 using SweetBox.CandyClasses;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
-using System.Text.Json;
 
 class Program {
    private static bool _isRunning = true;
-   private static List<Candy> _lastGeneratedBox = new();
+   private static Gift? _lastGeneratedGift = null;
 
    static void Main(string[] args) {
       while (_isRunning) {
@@ -26,13 +26,15 @@ class Program {
       Console.WriteLine("2. Генерация подарка с определенным количеством конфет");
       Console.WriteLine("3. Генерация подарка с заданным весом");
       Console.WriteLine("4. Проверить, был ли последний набор халяльным");
-      Console.WriteLine("5. Выход");
+      Console.WriteLine("5. Найти конфеты в последнем наборе по диапазону сахара");
+      Console.WriteLine("6. Отсортировать последний набор конфет");
+      Console.WriteLine("7. Выход");
       Console.WriteLine("--------------------------------------------------");
-      Console.Write("Выберите пункт меню (1-5): ");
+      Console.Write("Выберите пункт меню (1-7): ");
    }
 
    private static void ProcessUserChoice() {
-      string choice = Console.ReadLine();
+      string? choice = Console.ReadLine();
       Console.WriteLine();
 
       try {
@@ -50,11 +52,17 @@ class Program {
                ExecuteHalalCheck();
                break;
             case "5":
+               ExecuteFindBySugarContent();
+               break;
+            case "6":
+               ExecuteSortingMenu();
+               break;
+            case "7":
                _isRunning = false;
                Console.WriteLine("Завершение работы программы.");
                break;
             default:
-               Console.WriteLine("[Ошибка]: Неверный выбор. Введите число от 1 до 5.");
+               Console.WriteLine("[Ошибка]: Неверный выбор. Введите число от 1 до 7.");
                break;
          }
       }
@@ -69,11 +77,63 @@ class Program {
          Console.ReadKey();
       }
    }
-
    private static void ExecuteSingleCandyGeneration() {
       Console.WriteLine("--- Генерация единичной конфеты ---");
       Candy candy = GiftDataGenerator.GenerateRandomCandy();
       PrintCandyDetails(candy);
+   }
+   private static void ExecuteSortingMenu() {
+      if (_lastGeneratedGift == null || !_lastGeneratedGift.Items.Any()) {
+         Console.WriteLine("[Информация]: Сначала сгенерируйте подарочный набор (пункты 2 или 3).");
+         return;
+      }
+
+      bool inSortingMenu = true;
+      while (inSortingMenu) {
+         Console.Clear();
+         Console.WriteLine("==================================================");
+         Console.WriteLine("            МЕНЮ СОРТИРОВКИ КОНФЕТ                ");
+         Console.WriteLine("==================================================");
+         Console.WriteLine("1. Сортировать по названию (Name)");
+         Console.WriteLine("2. Сортировать по весу (Weight)");
+         Console.WriteLine("3. Сортировать по содержанию сахара (SugarContent)");
+         Console.WriteLine("4. Сортировать по размеру (Size)");
+         Console.WriteLine("5. Назад в главное меню");
+         Console.WriteLine("--------------------------------------------------");
+         Console.Write("Выберите критерий сортировки (1-5): ");
+
+         string? sortChoice = Console.ReadLine();
+         Console.WriteLine();
+
+         try {
+            SortCriterion? criterion = sortChoice switch
+            {
+               "1" => SortCriterion.Name,
+               "2" => SortCriterion.Weight,
+               "3" => SortCriterion.SugarContent,
+               "4" => SortCriterion.Size,
+               "5" => null,
+               _ => throw new ArgumentException("Неверный выбор пункта сортировки.")
+            };
+
+            if (criterion == null) {
+               inSortingMenu = false;
+               break;
+            }
+            _lastGeneratedGift.SortBy(criterion.Value);
+            SaveAndReportBox("last_sorted_gift_report.txt");
+
+            Console.WriteLine($"\n[Успех]: Набор успешно отсортирован по критерию: {criterion.Value}!");
+            inSortingMenu = false;
+         }
+         catch (Exception ex) {
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.WriteLine($"[Ошибка]: {ex.Message}");
+            Console.ResetColor();
+            Console.WriteLine("\nНажмите любую клавишу, чтобы продолжить...");
+            Console.ReadKey();
+         }
+      }
    }
 
    private static void ExecuteGiftByCountGeneration() {
@@ -85,11 +145,11 @@ class Program {
          count = 10;
       }
 
-      _lastGeneratedBox.Clear();
+      var tempCandies = new List<Candy>();
       for (int i = 0; i < count; i++) {
-         _lastGeneratedBox.Add(GiftDataGenerator.GenerateRandomCandy());
+         tempCandies.Add(GiftDataGenerator.GenerateRandomCandy());
       }
-
+      _lastGeneratedGift = new Gift(tempCandies);
       SaveAndReportBox("gift_by_count_report.txt");
    }
 
@@ -102,36 +162,38 @@ class Program {
          targetWeight = 300.0;
       }
 
-      _lastGeneratedBox.Clear();
-      double currentWeight = 0;
+      var gift = new Gift(targetWeight);
 
-      // Генерируем конфеты до тех пор, пока суммарный вес не приблизится или не превысит целевой
-      while (currentWeight < targetWeight) {
+      while (true) {
          var candy = GiftDataGenerator.GenerateRandomCandy();
-         _lastGeneratedBox.Add(candy);
-         currentWeight += candy.Weight;
+         if (candy.Weight > gift.RemainingWeight) { break; }
+
+         gift.Add(candy);
+
+         if (gift.RemainingWeight <= 0) { break; }
       }
 
+      _lastGeneratedGift = gift;
       SaveAndReportBox("gift_by_weight_report.txt");
    }
 
    private static void ExecuteHalalCheck() {
       Console.WriteLine("--- Проверка последнего набора на халяльность ---");
 
-      if (_lastGeneratedBox.Count == 0) {
+      if (_lastGeneratedGift == null || !_lastGeneratedGift.Items.Any()) {
          Console.WriteLine("[Информация]: Сначала сгенерируйте подарочный набор (пункты 2 или 3).");
          return;
       }
-      bool isHalal = true; 
-      foreach (var candy in _lastGeneratedBox) {
+
+      bool isHalal = true;
+      foreach (var candy in _lastGeneratedGift) {
          if (candy is JellyCandy jelly && !jelly.IsHalal) {
             isHalal = false;
+            break;
          }
       }
 
-      
-
-      Console.WriteLine($"Количество конфет в последнем наборе: {_lastGeneratedBox.Count}");
+      Console.WriteLine($"Количество конфет в последнем наборе: {_lastGeneratedGift.Items.Count}");
       if (isHalal) {
          Console.ForegroundColor = ConsoleColor.Green;
          Console.WriteLine("[Результат]: Последний набор СООТВЕТСТВУЕТ стандартам халяль.");
@@ -144,59 +206,80 @@ class Program {
       }
    }
 
-   private static void SaveAndReportBox(string fileName) {
-      double totalWeight = 0;
-      double totalSugar = 0;
+   private static void ExecuteFindBySugarContent() {
+      Console.WriteLine("--- Поиск конфет в последнем наборе по диапазону сахара ---");
 
+      if (_lastGeneratedGift == null || !_lastGeneratedGift.Items.Any()) {
+         Console.WriteLine("[Информация]: Сначала сгенерируйте подарочный набор (пункты 2 или 3).");
+         return;
+      }
+
+      Console.Write("Введите минимальный процент сахара (например, 5.0): ");
+      if (!double.TryParse(Console.ReadLine(), out double minSugar)) {
+         Console.WriteLine("[Ошибка]: Некорректный ввод минимального значения.");
+         return;
+      }
+      double maxSugar;
+      do {
+         Console.Write("Введите максимальный процент сахара (например, 25.0): ");
+         if (!double.TryParse(Console.ReadLine(), out maxSugar )) {
+            Console.WriteLine("[Ошибка]: Некорректный ввод максимального значения.");
+            return;
+         }
+      } while (maxSugar < minSugar);
+
+      try {
+         var foundCandies = _lastGeneratedGift.FindBySugarContent(minSugar, maxSugar).ToList();
+
+         Console.WriteLine($"\nРезультаты поиска в диапазоне от {minSugar:F1}% до {maxSugar:F1}% (найдено: {foundCandies.Count}):");
+         if (foundCandies.Count == 0) {
+            Console.WriteLine("  Конфет, удовлетворяющих условию, не найдено.");
+         }
+         else {
+            for (int i = 0; i < foundCandies.Count; i++) {
+               Console.WriteLine($"  [{i + 1,2}] {foundCandies[i].GetInfo()}");
+            }
+         }
+      }
+      catch (ArgumentException ex) {
+         Console.ForegroundColor = ConsoleColor.Red;
+         Console.WriteLine($"[Ошибка валидации]: {ex.Message}");
+         Console.ResetColor();
+      }
+   }
+
+   private static void SaveAndReportBox(string fileName) {
+      if (_lastGeneratedGift == null)
+         return;
+
+      double totalSugar = 0;
       var sb = new StringBuilder();
+
       sb.AppendLine("==================================================");
       sb.AppendLine("               ОТЧЕТ ПОДАРКА SWEETBOX             ");
       sb.AppendLine("==================================================");
-      sb.AppendLine($"Всего конфет: {_lastGeneratedBox.Count}");
+      sb.AppendLine($"Всего конфет: {_lastGeneratedGift.Items.Count}");
       sb.AppendLine("--------------------------------------------------");
 
-      for (int i = 0; i < _lastGeneratedBox.Count; i++) {
-         var candy = _lastGeneratedBox[i];
-         totalWeight += candy.Weight;
+      int index = 1;
+      foreach (var candy in _lastGeneratedGift) {
          totalSugar += candy.SugarContent;
-
-         string details = candy switch
-         {
-            ChocolateCandy choco => $"Шоколад | Тип: {choco.ChocolateType} | Начинка: {(choco.HasFilling ? "Да" : "Нет")}",
-            Lollipop l => $"Леденец | Вкус: {l.Flavor}",
-            JellyCandy j => $"Мармелад | Халяль: {(j.IsHalal ? "Да" : "Нет")}",
-            _ => "Конфета"
-         };
-
-         sb.AppendLine($"[{i + 1,2}] Название: {candy.Name,-20} | Размер: {candy.Size,-6} | Вес: {candy.Weight,5:F1}г | Сахар: {candy.SugarContent,4:F1}% | {details}");
+         sb.AppendLine($"[{index++,2}] {candy.GetInfo()}");
       }
 
       sb.AppendLine("--------------------------------------------------");
-      sb.AppendLine($"Общий вес подарка: {totalWeight:F2} г");
-      sb.AppendLine($"Среднее содержание сахара: {(totalSugar / _lastGeneratedBox.Count):F1}%");
+      sb.AppendLine($"Общий вес подарка: {_lastGeneratedGift.CalculateTotalWeight():F2} г");
+      sb.AppendLine($"Среднее содержание сахара: {(_lastGeneratedGift.Items.Count > 0 ? totalSugar / _lastGeneratedGift.Items.Count : 0):F1}%");
       sb.AppendLine("==================================================");
-      
+
       File.WriteAllText(fileName, sb.ToString());
 
-      
       Console.WriteLine($"\n[Успех]: Набор успешно сформирован и записан в файл: {fileName}");
-      Console.WriteLine($"Сгенерировано конфет: {_lastGeneratedBox.Count}");
-      Console.WriteLine($"Общий вес: {totalWeight:F2} г");
+      Console.WriteLine($"Сгенерировано конфет: {_lastGeneratedGift.Items.Count}");
+      Console.WriteLine($"Общий вес: {_lastGeneratedGift.CalculateTotalWeight():F2} г");
    }
 
    private static void PrintCandyDetails(Candy candy) {
-      string typeInfo = candy switch
-      {
-         JellyCandy jelly => $"Категория: Мармелад | Халяль: {(jelly.IsHalal ? "Да" : "Нет")}",
-         ChocolateCandy choco => $"Категория: Шоколад | Вид: {choco.ChocolateType} | Начинка: {(choco.HasFilling ? "Да" : "Нет")}",
-         Lollipop lollipop => $"Категория: Леденец | Вкус: {lollipop.Flavor}",
-         _ => "Категория: Неизвестно"
-      };
-
-      Console.WriteLine($" Название: \"{candy.Name}\"");
-      Console.WriteLine($" Размер:   {candy.Size}");
-      Console.WriteLine($" Вес:      {candy.Weight:F2} г");
-      Console.WriteLine($" Сахар:    {candy.SugarContent:F1}%");
-      Console.WriteLine($" {typeInfo}");
+      Console.WriteLine($" {candy.GetInfo()}");
    }
 }

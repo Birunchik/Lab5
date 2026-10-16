@@ -27,7 +27,7 @@
 
       public override string GetInfo() {
          string fillingInfo = HasFilling ? "с начинкой" : "без начинки";
-         return $"Шоколадная конфета: '{Name}', Тип шоколада: {ChocolateType}, Начинка: {fillingInfo}, Размер: {Size}, Вес: {Weight}г, Сахар: {SugarContent}%";
+         return $"Название: '{Name}', Размер: {Size}, Вес: {Weight:F2}г, Сахар: {SugarContent:F2}%, Тип шоколада: {ChocolateType}, Начинка: {fillingInfo}";
       }
 
       public override string ToString() {
